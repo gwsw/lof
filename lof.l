@@ -6,8 +6,8 @@ int line_num = 0;
 %}
 %%
 
-"["                  { return LBRAC; }
-"]"                  { return RBRAC; }
+"["                  { printf("LEX:LBRAC\n"); return LBRAC; }
+"]"                  { printf("LEX:RBRAC\n"); return RBRAC; }
 
 [ \t\r]+             { }
 [\n]                 { ++line_num; }

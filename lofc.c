@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 
 #ifdef YYDEBUG
 extern int yydebug;
@@ -42,7 +43,7 @@ int main(int argc, char* argv[]) {
 #ifdef YYDEBUG
     yydebug = 0;
 #endif
-    while ((ch = getopt(argc, argv, "ds:")) != -1) {
+    while ((ch = getopt(argc, argv, "ds")) != -1) {
         switch (ch) {
         case 'd':
 #ifdef YYDEBUG
@@ -65,10 +66,15 @@ int main(int argc, char* argv[]) {
 	if (sset) {
 		char* str = concat(argv+optind, argc-optind);
 		FILE* str_fd = fmemopen(str, strlen(str), "r");
-		yyset_in(str_fd);
-		if (yyparse()) ret = 1;
-		fclose(str_fd);
-		free(str);
+		if (str_fd == NULL) {
+			printf("fmemopen error %d on %d byte string\n", (int) errno, (int) strlen(str));
+			ret = 1;
+		} else {
+			yyset_in(str_fd);
+			if (yyparse()) ret = 1;
+			fclose(str_fd);
+			free(str);
+		}
 	} else if (optind == argc) {
 		yyset_in(stdin);
 		if (yyparse()) ret = 1;
