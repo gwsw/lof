@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include "expr.h"
 
 #ifdef YYDEBUG
 extern int yydebug;
@@ -27,19 +28,24 @@ int yywrap() {
 }
 
 static char* concat(char** strings, unsigned num_strings) {
-	int size = 1;
-	for (unsigned i = 0; i < num_strings; ++i)
-		size += strlen(strings[i]);
-	char* r = malloc(size);
-	r[0] = '\0';
-	for (unsigned i = 0; i < num_strings; ++i)
-		strcat(r, strings[i]);
-	return r;
+    int size = 1;
+    for (unsigned i = 0; i < num_strings; ++i)
+        size += strlen(strings[i]);
+    char* r = malloc(size);
+    r[0] = '\0';
+    for (unsigned i = 0; i < num_strings; ++i)
+        strcat(r, strings[i]);
+    return r;
+}
+
+static int parse_fd(FILE* fd) {
+    yyset_in(fd);
+    return yyparse();
 }
 
 int main(int argc, char* argv[]) {
     int ch;
-	int sset = 0;
+    int istring = 0;
 #ifdef YYDEBUG
     yydebug = 0;
 #endif
@@ -52,9 +58,9 @@ int main(int argc, char* argv[]) {
             printf("not compiled with YYDEBUG\n");
 #endif
             break;
-		case 's':
-			sset = 1;
-			break;
+        case 's':
+            istring = 1;
+            break;
         default:
             return usage();
         }
@@ -63,33 +69,27 @@ int main(int argc, char* argv[]) {
     yyset_debug(yydebug);
 #endif
     int ret = 0;
-	if (sset) {
-		char* str = concat(argv+optind, argc-optind);
-		FILE* str_fd = fmemopen(str, strlen(str), "r");
-		if (str_fd == NULL) {
-			printf("fmemopen error %d on %d byte string\n", (int) errno, (int) strlen(str));
-			ret = 1;
-		} else {
-			yyset_in(str_fd);
-			if (yyparse()) ret = 1;
-			fclose(str_fd);
-			free(str);
-		}
-	} else if (optind == argc) {
-		yyset_in(stdin);
-		if (yyparse()) ret = 1;
-	} else {
-		while (optind < argc) {
-			char const* file = argv[optind++];
-			FILE* f = fopen(file, "r");
-			if (f == NULL) {
-				printf("cannot open %s\n", file);
-				ret = 1;
-			} else {
-				yyset_in(f);
-				if (yyparse()) ret = 1;
-			}
-		}
-	}
-	return ret;
+    if (istring) {
+        char* str = concat(argv+optind, argc-optind);
+        ExprList* el = expr_list_from_string(str);
+        char rbuf[512];
+        expr_list_to_string(el, rbuf, sizeof(rbuf));
+        expr_list_free(el);
+        free(str);
+        printf("ROUND-TRIP(%s)\n", rbuf);
+    } else if (optind == argc) {
+        if (parse_fd(stdin)) ret = 1;
+    } else {
+        while (optind < argc) {
+            char const* file = argv[optind++];
+            FILE* f = fopen(file, "r");
+            if (f == NULL) {
+                printf("cannot open %s\n", file);
+                ret = 1;
+            } else {
+                if (parse_fd(f)) ret = 1;
+            }
+        }
+    }
+    return ret;
 }
