@@ -30,17 +30,6 @@ static void expr_list_add(ExprList* el, Expr* expr) {
     expr_list_insert(expr, expr_from_node(el->el_tail));
 }
 
-#if 0
-static void expr_list_to_string(ExprList* el, char* buf, size_t buf_len) {
-    for (ExprNode* en = el->el_head; en != (ExprNode*) el && buf_len > 0; en = en->en_next) {
-        expr_to_string(expr_from_node(en), buf, buf_len);
-        size_t len = strlen(buf);
-        buf += len;
-        buf_len -= len;
-    }
-}
-#endif
-
 static void expr_iter_children(Expr* expr, void (*func)(Expr*,void*), void* func_data) {
     if (expr->expr_children == NULL)
         return;
@@ -96,8 +85,11 @@ int expr_eval(Expr* expr) {
         ev.ev_Value = 0; // empty expr is false
         expr_iter_children(expr, expr_eval_iter, &ev);
         return ev.ev_Value; }
-    case ET_NEG:
-        return !expr_eval(expr->expr_neg_expr);
+    case ET_NEG: {
+        int value = expr_eval(expr->expr_neg_expr);
+        if (value >= 0)
+            value = !value;
+        return value; }
     case ET_VAR:
         return -1;
     default:
@@ -129,6 +121,7 @@ static void expr_to_string2(Expr* expr, void* ves) {
             *es->buf++ = ']';
             *es->buf = '\0';
         }
+        break;
     case ET_VAR: {
         int len = snprintf(es->buf, es->len, "%s", expr->expr_var_name);
         es->buf += len;
@@ -165,4 +158,3 @@ static void expr_print2(Expr* expr, void* v) {
 void expr_print(Expr* expr) {
     expr_print2(expr, NULL);
 }
-

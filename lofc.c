@@ -27,29 +27,33 @@ int yywrap() {
     return 1;
 }
 
-static char* concat(char** strings, unsigned num_strings) {
-    int size = 1;
-    for (unsigned i = 0; i < num_strings; ++i)
-        size += strlen(strings[i]);
-    char* r = malloc(size);
-    r[0] = '\0';
-    for (unsigned i = 0; i < num_strings; ++i)
-        strcat(r, strings[i]);
-    return r;
-}
-
-static int parse_fd(FILE* fd) {
-    yyset_in(fd);
-    return yyparse();
+static void handle_line(char* line) {
+    char* eq = strchr(line, '=');
+    if (eq == NULL) {
+        Expr* expr = expr_from_string(line);
+        char rbuf[512];
+        expr_to_string(expr, rbuf, sizeof(rbuf));
+        expr_free(expr);
+        printf("ROUND-TRIP(%s)\n", rbuf);
+    } else {
+        *eq++ = '\0';
+        Expr* expr1 = expr_from_string(line);
+        Expr* expr2 = expr_from_string(eq);
+        int value1 = expr_eval(expr1);
+        int value2 = expr_eval(expr2);
+        if (value1 == value2)
+            printf("equal (%d)\n", value1);
+        else
+            printf("not equal (%d != %d)\n",  value1, value2);
+    }
 }
 
 int main(int argc, char* argv[]) {
     int ch;
-    int istring = 0;
 #ifdef YYDEBUG
     yydebug = 0;
 #endif
-    while ((ch = getopt(argc, argv, "ds")) != -1) {
+    while ((ch = getopt(argc, argv, "d")) != -1) {
         switch (ch) {
         case 'd':
 #ifdef YYDEBUG
@@ -58,9 +62,6 @@ int main(int argc, char* argv[]) {
             printf("not compiled with YYDEBUG\n");
 #endif
             break;
-        case 's':
-            istring = 1;
-            break;
         default:
             return usage();
         }
@@ -68,28 +69,15 @@ int main(int argc, char* argv[]) {
 #ifdef YYDEBUG
     yyset_debug(yydebug);
 #endif
-    int ret = 0;
-    if (istring) {
-        char* str = concat(argv+optind, argc-optind);
-        Expr* expr = expr_from_string(str);
-        char rbuf[512];
-        expr_to_string(expr, rbuf, sizeof(rbuf));
-        expr_free(expr);
-        free(str);
-        printf("ROUND-TRIP(%s)\n", rbuf);
-    } else if (optind == argc) {
-        if (parse_fd(stdin)) ret = 1;
-    } else {
-        while (optind < argc) {
-            char const* file = argv[optind++];
-            FILE* f = fopen(file, "r");
-            if (f == NULL) {
-                printf("cannot open %s\n", file);
-                ret = 1;
-            } else {
-                if (parse_fd(f)) ret = 1;
-            }
-        }
+
+    for (;;) {
+        printf(">");
+        char line[256];
+        if (fgets(line, sizeof(line), stdin) == NULL) break;
+        size_t len = strcspn(line, "\r\n");
+        line[len] = '\0';
+        if (strcmp(line, "q") == 0) break;
+        handle_line(line);
     }
-    return ret;
+    return 0;
 }
