@@ -5,67 +5,64 @@
 extern int yyparse(void);
 extern void yyset_in(FILE*);
 
-static ExprList* expr_list_returned;
+static Expr* expr_returned;
 
-ExprList* expr_list_from_string(char const* str) {
+Expr* expr_from_string(char const* str) {
     FILE* str_fd = fmemopen((char*)str, strlen(str), "r");
     if (str_fd == NULL) return NULL;
     yyset_in(str_fd);
-    expr_list_returned = NULL;
-    if (yyparse()) expr_list_returned = NULL;
+    expr_returned = NULL;
+    if (yyparse()) expr_returned = NULL;
     fclose(str_fd);
-    return expr_list_returned;
+    return expr_returned;
 }
 
 %}
 
-%start expr_list_top
+%start expr_top
 
 %union {
     int bool_val;
     char* string_val;
     struct Expr* expr_val;
-    struct ExprList* expr_list_val;
 };
 
 %token LBRAC
 %token RBRAC
 %token <string_val> VAR
 
-%nterm <expr_list_val> expr_list
 %nterm <expr_val> expr
+%nterm <expr_val> term
 
 %%
 
-expr_list_top :
-      expr_list
+expr_top :
+      expr
         {
-            expr_list_returned = $1;
+            expr_returned = $1;
         }
 ;
 
-expr_list :
+expr :
       /*empty*/
         {
-            $$ = expr_list_new(); 
+            $$ = expr_norm_new(); 
         }
-    | expr_list expr
+    | expr term
         {
-            expr_list_add($1, $2);
+            expr_add_child($1, $2);
             $$ = $1;
         }
     ;
 
-expr :
-      LBRAC expr_list RBRAC
+term :
+      LBRAC expr RBRAC
         {
-            $$ = expr_new();
-            expr_set_children($$, $2);
+            $$ = expr_neg_new($2);
         }
     | VAR
         {
-            $$ = expr_new();
-            expr_set_var($$, $1);
+            $$ = expr_var_new($1);
         }
     ;
 

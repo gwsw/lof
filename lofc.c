@@ -71,10 +71,10 @@ int main(int argc, char* argv[]) {
     int ret = 0;
     if (istring) {
         char* str = concat(argv+optind, argc-optind);
-        ExprList* el = expr_list_from_string(str);
+        Expr* expr = expr_from_string(str);
         char rbuf[512];
-        expr_list_to_string(el, rbuf, sizeof(rbuf));
-        expr_list_free(el);
+        expr_to_string(expr, rbuf, sizeof(rbuf));
+        expr_free(expr);
         free(str);
         printf("ROUND-TRIP(%s)\n", rbuf);
     } else if (optind == argc) {
