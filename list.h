@@ -5,8 +5,9 @@ typedef struct ListNode {
 } ListNode;
 
 typedef struct List {
-    struct ListNode* ls_head;
-    struct ListNode* ls_tail;
+    ListNode n;
+    #define ls_head n.ln_next
+    #define ls_tail n.ln_prev
 } List;
 
 List* list_new(void);

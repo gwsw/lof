@@ -3,7 +3,7 @@
 
 List* list_new(void) {
     List* ls = (List*) malloc(sizeof(List));
-    ls->ls_head = ls->ls_tail = (ListNode*) ls;
+    ls->ls_head = ls->ls_tail = &ls->n;
     return ls;
 }
 
