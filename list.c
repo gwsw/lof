@@ -18,6 +18,11 @@ void list_add_tail(List* ls, ListNode* ln) {
     list_insert(ln, ls->ls_tail);
 }
 
+void list_unlink(ListNode* ln) {
+    ln->ln_next->ln_prev = ln->ln_prev;
+    ln->ln_prev->ln_next = ln->ln_next;
+}
+
 void* list_next(List* ls, void* vln) {
     if (ls == NULL) return NULL;
     ListNode* ln = vln;

@@ -26,7 +26,24 @@ Expr* expr_neg_new(Expr* neg_expr) {
 }
 
 void expr_free(Expr* expr) {
-    ///@@@
+    switch (expr->expr_type) {
+    case ET_LIST: {
+        Expr* child;
+        while ((child = list_next(expr->expr_children, NULL)) != NULL) {
+            list_unlink(&child->expr_node);
+            expr_free(child);
+        }
+        break; }
+    case ET_NEG:
+        expr_free(expr->expr_neg_expr);
+        break;
+    case ET_VAR:
+        free(expr->expr_var_name);
+        break;
+    default:
+        assert(0);
+    }
+    free(expr);
 }
 
 void expr_add_child(Expr* expr, Expr* child) {
@@ -90,7 +107,12 @@ List* expr_vars(Expr* expr, List* vars) {
 }
 
 void vars_free(List* vars) {
-    ///@@@
+    Var* var;
+    while ((var = list_next(vars, NULL)) != NULL) {
+        list_unlink(&var->v_node);
+        free(var->v_name);
+        free(var);
+    }
 }
 
 static Expr* expr_set_values2(Expr* expr, List* vars) {
