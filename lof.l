@@ -1,3 +1,6 @@
+%option nounput
+%option noinput
+
 %{
 #include <string.h>
 #include "lof.yacc.h"

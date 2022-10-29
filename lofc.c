@@ -28,23 +28,39 @@ int yywrap() {
 }
 
 static void handle_line(char* line) {
-    char* eq = strchr(line, '=');
-    if (eq == NULL) {
-        Expr* expr = expr_from_string(line);
-        char rbuf[512];
-        expr_to_string(expr, rbuf, sizeof(rbuf));
-        expr_free(expr);
-        printf("ROUND-TRIP(%s)\n", rbuf);
-    } else {
-        *eq++ = '\0';
-        Expr* expr1 = expr_from_string(line);
-        Expr* expr2 = expr_from_string(eq);
-        int value1 = expr_eval(expr1);
-        int value2 = expr_eval(expr2);
-        if (value1 == value2)
-            printf("equal (%d)\n", value1);
+    if (*line == '?') {
+        Expr* expr = expr_from_string(line+1);
+        if (expr == NULL)
+            printf("invalid expression\n");
         else
-            printf("not equal (%d != %d)\n",  value1, value2);
+            printf("%d\n", expr_eval(expr));
+    } else {
+        char* eq = strchr(line, '=');
+        if (eq == NULL) {
+            Expr* expr = expr_from_string(line);
+            if (expr == NULL)
+                printf("invalid expression\n");
+            else {
+                char rbuf[512];
+                expr_to_string(expr, rbuf, sizeof(rbuf));
+                expr_free(expr);
+                printf("ROUND-TRIP(%s)\n", rbuf);
+            }
+        } else {
+            *eq++ = '\0';
+            Expr* expr1 = expr_from_string(line);
+            Expr* expr2 = expr_from_string(eq);
+            if (expr1 == NULL || expr2 == NULL)
+                printf("invalid expression\n");
+            else {
+                int value1 = expr_eval(expr1);
+                int value2 = expr_eval(expr2);
+                if (value1 == value2)
+                    printf("equal (%d)\n", value1);
+                else
+                    printf("not equal (%d != %d)\n",  value1, value2);
+            }
+        }
     }
 }
 

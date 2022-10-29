@@ -1,21 +1,12 @@
+#include "list.h"
 
 typedef enum { ET_NULL, ET_LIST, ET_NEG, ET_VAR } ExprType;
 
-typedef struct ExprNode {
-    struct ExprNode* en_next;
-    struct ExprNode* en_prev;
-} ExprNode;
-
-typedef struct ExprList {
-    struct ExprNode* el_head;
-    struct ExprNode* el_tail;
-} ExprList;
-
 typedef struct Expr {
-    ExprNode e;
+    ListNode expr_node;
     ExprType expr_type;
     union {
-        ExprList* et_list_children;
+        List* et_list_children;
         char* et_var_name;
         struct Expr* et_neg_expr;
     } et;

@@ -8,7 +8,7 @@ LEXFLAGS = -d
 CFLAGS += -DYYDEBUG
 endif
 
-XOBJ = expr.o
+XOBJ = expr.o list.o
 
 $(APP): $(APP)c.o $(APP)w.o $(APP).lex.o $(XOBJ)
 	$(CC) -o $(APP) $(APP)c.o $(APP)w.o $(APP).lex.o $(XOBJ)
