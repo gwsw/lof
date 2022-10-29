@@ -34,21 +34,6 @@ static void handle_line(char* line) {
             printf("invalid expression\n");
         else
             printf("%d\n", expr_eval(expr));
-#if 0
-    } else if (*line == 'v') {
-        Expr* expr = expr_from_string(line+1);
-        if (expr == NULL)
-            printf("invalid expression\n");
-        else {
-            List* vars = expr_vars(expr, NULL);
-            Var* var = NULL;
-            while ((var = list_next(vars, var)) != NULL) {
-                printf("%s ", var->v_name);
-            }
-            printf("\n");
-            vars_free(vars);
-        }
-#endif
     } else {
         char* eq = strchr(line, '=');
         if (eq == NULL) {
@@ -59,19 +44,25 @@ static void handle_line(char* line) {
                 char rbuf[512];
                 expr_to_string(expr, rbuf, sizeof(rbuf));
                 expr_free(expr);
-                printf("ROUND-TRIP(%s)\n", rbuf);
+                printf("%s\n", rbuf);
             }
         } else {
             *eq++ = '\0';
             Expr* expr1 = expr_from_string(line);
-            Expr* expr2 = expr_from_string(eq);
-            if (expr1 == NULL || expr2 == NULL)
+            if (expr1 == NULL)
                 printf("invalid expression\n");
             else {
-                if (expr_eq(expr1, expr2))
-                    printf("equal\n");
-                else
-                    printf("not equal\n");
+                Expr* expr2 = expr_from_string(eq);
+                if (expr2 == NULL)
+                    printf("invalid expression\n");
+                else {
+                    if (expr_eq(expr1, expr2))
+                        printf("equal\n");
+                    else
+                        printf("not equal\n");
+                    expr_free(expr2);
+                }
+                expr_free(expr1);
             }
         }
     }
