@@ -12,7 +12,6 @@ extern void yyset_debug(int);
 
 extern int yyparse(void);
 extern void yyset_in(FILE*);
-extern int line_num;
 
 static int usage() {
     printf("usage: lang [file...]\n");
@@ -20,7 +19,7 @@ static int usage() {
 }
 
 void yyerror(const char* str) {
-    fprintf(stderr, "ERROR: line %d: %s\n", line_num, str);
+    fprintf(stderr, "ERROR: %s\n", str);
 }
 
 int yywrap() {
