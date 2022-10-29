@@ -25,3 +25,11 @@ void* list_next(List* ls, void* vln) {
     if (next == ls) next = NULL;
     return next;
 }
+
+int list_count(List* ls) {
+    int count = 0;
+    ListNode* ln = NULL;
+    while ((ln = list_next(ls, ln)) != NULL)
+        ++count;
+    return count;
+}
