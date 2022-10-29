@@ -47,7 +47,7 @@ expr_top :
 expr :
       /*empty*/
         {
-            $$ = expr_norm_new(); 
+            $$ = expr_list_new(); 
         }
     | expr term
         {

@@ -34,6 +34,18 @@ static void handle_line(char* line) {
             printf("invalid expression\n");
         else
             printf("%d\n", expr_eval(expr));
+    } else if (*line == 'v') {
+        Expr* expr = expr_from_string(line+1);
+        if (expr == NULL)
+            printf("invalid expression\n");
+        else {
+            List* vars = expr_vars(expr);
+            Var* var = NULL;
+            while ((var = list_next(vars, var)) != NULL) {
+                printf("%s ", var->v_name);
+            }
+            printf("\n");
+        }
     } else {
         char* eq = strchr(line, '=');
         if (eq == NULL) {

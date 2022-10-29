@@ -4,7 +4,7 @@
 #include <assert.h>
 #include "expr.h"
 
-Expr* expr_norm_new(void) {
+Expr* expr_list_new(void) {
     Expr* expr = (Expr*) malloc(sizeof(Expr));
     expr->expr_type = ET_LIST;
     expr->expr_children = NULL;
@@ -53,6 +53,38 @@ int expr_eval(Expr* expr) {
     default:
         assert(0);
     }
+}
+
+static void expr_add_vars(List* list, Expr* expr) {
+    switch (expr->expr_type) {
+    case ET_LIST: {
+        Expr* child = NULL;
+        while ((child = list_next(expr->expr_children, child)) != NULL)
+            expr_add_vars(list, child);
+        break; }
+    case ET_VAR: {
+        Var* var = NULL;
+        while ((var = list_next(list, var)) != NULL) {
+            int cmp = strcmp(expr->expr_var_name, var->v_name);
+            if (cmp == 0) return;
+            if (cmp < 0) break;
+        }
+        Var* nvar = malloc(sizeof(Var));
+        nvar->v_name = strdup(expr->expr_var_name);
+        list_insert(&nvar->v_node, var == NULL ? list->ls_tail : var->v_node.ln_prev);
+        break; }
+    case ET_NEG: 
+        expr_add_vars(list, expr->expr_neg_expr);
+        break;
+    default:
+        assert(0);
+    }
+}
+
+List* expr_vars(Expr* expr) {
+    List* list = list_new();
+    expr_add_vars(list, expr);
+    return list;
 }
 
 int expr_eq(Expr* expr1, Expr* expr2) {

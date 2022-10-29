@@ -7,10 +7,6 @@ List* list_new(void) {
     return ls;
 }
 
-void list_free(List* ls) {
-    ///@@@
-}
-
 void list_insert(ListNode* ln, ListNode* after) {
     ln->ln_next = after->ln_next;
     ln->ln_prev = after;

@@ -15,14 +15,21 @@ typedef struct Expr {
     #define expr_neg_expr et.et_neg_expr
 } Expr;
 
+typedef struct Var {
+    ListNode v_node;
+    char* v_name;
+    int v_value;
+} Var;
 
-Expr* expr_norm_new(void);
+
+Expr* expr_list_new(void);
 Expr* expr_var_new(char const* var_name);
 Expr* expr_neg_new(Expr* expr);
 void expr_free(Expr* expr);
 void expr_set_neg(Expr* expr, int neg);
 void expr_add_child(Expr* expr, Expr* child);
 void expr_set_var(Expr* expr, char const* var_name);
+List* expr_vars(Expr* expr);
 int expr_eq(Expr* expr1, Expr* expr2);
 Expr* expr_from_string(char const* str);
 void expr_to_string(Expr* expr, char* buf, size_t buf_len);
