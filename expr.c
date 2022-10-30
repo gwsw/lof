@@ -4,23 +4,26 @@
 #include <assert.h>
 #include "expr.h"
 
-Expr* expr_list_new(void) {
+static Expr* expr_new(ExprType type) {
     Expr* expr = (Expr*) malloc(sizeof(Expr));
-    expr->expr_type = ET_LIST;
+    expr->expr_type = type;
+    return expr;
+}
+
+Expr* expr_list_new(void) {
+    Expr* expr = expr_new(ET_LIST);
     expr->expr_children = NULL;
     return expr;
 }
 
 Expr* expr_var_new(char const* var_name) {
-    Expr* expr = (Expr*) malloc(sizeof(Expr));
-    expr->expr_type = ET_VAR;
+    Expr* expr = expr_new(ET_VAR);
     expr->expr_var_name = strdup(var_name);
     return expr;
 }
 
 Expr* expr_neg_new(Expr* neg_expr) {
-    Expr* expr = (Expr*) malloc(sizeof(Expr));
-    expr->expr_type = ET_NEG;
+    Expr* expr = expr_new(ET_NEG);
     expr->expr_neg_expr = neg_expr;
     return expr;
 }
@@ -85,20 +88,20 @@ static void expr_find_vars(Expr* expr, List* vars) {
         while ((child = list_next(expr->expr_children, child)) != NULL)
             expr_find_vars(child, vars);
         break; }
+    case ET_NEG: 
+        expr_find_vars(expr->expr_neg_expr, vars);
+        break;
     case ET_VAR: {
         Var* var = NULL;
         while ((var = list_next(vars, var)) != NULL) {
             int cmp = strcmp(expr->expr_var_name, var->v_name);
-            if (cmp == 0) return;
+            if (cmp == 0) return; // already in list
             if (cmp < 0) break;
         }
         Var* nvar = malloc(sizeof(Var));
         nvar->v_name = strdup(expr->expr_var_name);
         list_insert(&nvar->v_node, var == NULL ? vars->ls_tail : var->v_node.ln_prev);
         break; }
-    case ET_NEG: 
-        expr_find_vars(expr->expr_neg_expr, vars);
-        break;
     default:
         assert(0);
     }
@@ -120,16 +123,16 @@ void vars_free(List* vars) {
     }
 }
 
-static Expr* expr_set_values2(Expr* expr, List* vars) {
+static Expr* expr_subst_vars2(Expr* expr, List* vars) {
     switch (expr->expr_type) {
     case ET_LIST: {
         Expr* nexpr = expr_list_new();
         Expr* child = NULL;
         while ((child = list_next(expr->expr_children, child)) != NULL)
-            expr_add_child(nexpr, expr_set_values2(child, vars));
+            expr_add_child(nexpr, expr_subst_vars2(child, vars));
         return nexpr; }
     case ET_NEG:
-        return expr_neg_new(expr_set_values2(expr->expr_neg_expr, vars));
+        return expr_neg_new(expr_subst_vars2(expr->expr_neg_expr, vars));
     case ET_VAR: {
         int value = -1;
         Var* var = NULL;
@@ -149,13 +152,13 @@ static Expr* expr_set_values2(Expr* expr, List* vars) {
     }
 }
 
-Expr* expr_set_values(Expr* expr, List* vars, unsigned long val_mask) {
+static Expr* expr_subst_vars(Expr* expr, List* vars, unsigned long val_mask) {
     Var* var = NULL;
     while ((var = list_next(vars, var)) != NULL) {
         var->v_value = val_mask & 1;
         val_mask >>= 1;
     }
-    return expr_set_values2(expr, vars);
+    return expr_subst_vars2(expr, vars);
 }
 
 int expr_eq(Expr* expr1, Expr* expr2) {
@@ -164,8 +167,8 @@ int expr_eq(Expr* expr1, Expr* expr2) {
     int num_vars = list_count(vars);
     int eq = 1;
     for (unsigned long val_mask = 0; val_mask != (1<<num_vars); ++val_mask) {
-        Expr* e1 = expr_set_values(expr1, vars, val_mask);
-        Expr* e2 = expr_set_values(expr2, vars, val_mask);
+        Expr* e1 = expr_subst_vars(expr1, vars, val_mask);
+        Expr* e2 = expr_subst_vars(expr2, vars, val_mask);
         eq = (expr_eval(e1) == expr_eval(e2));
         expr_free(e1);
         expr_free(e2);
@@ -209,6 +212,7 @@ static void expr_to_string2(Expr* expr, MemBuf* mbuf) {
 void expr_to_string(Expr* expr, char* buf, size_t len) {
     MemBuf mbuf = { buf, len };
     expr_to_string2(expr, &mbuf);
+    *mbuf.buf = '\0';
 }
 
 void expr_print(Expr* expr) {

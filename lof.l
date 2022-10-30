@@ -12,8 +12,7 @@ extern void yyerror(char const*);
 "]"                     { return RBRAC; }
 [A-Za-z_][A-Za-z0-9_]*  { yylval.string_val = strdup(yytext); return VAR; }
 
-[ \t\r]+                { }
-[\n]                    { }
+[ \t\r\n]+              { }
 .                       { char msg[32];
                           snprintf(msg, sizeof(msg), "illegal token: '%s'", yytext);
                           yyerror(msg); }

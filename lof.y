@@ -23,13 +23,11 @@ Expr* expr_from_string(char const* str) {
 %start expr_top
 
 %union {
-    int bool_val;
     char* string_val;
     struct Expr* expr_val;
 };
 
-%token LBRAC
-%token RBRAC
+%token LBRAC RBRAC 
 %token <string_val> VAR
 
 %nterm <expr_val> expr

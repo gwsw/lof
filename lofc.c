@@ -10,11 +10,8 @@ extern int yydebug;
 extern void yyset_debug(int);
 #endif
 
-extern int yyparse(void);
-extern void yyset_in(FILE*);
-
 static int usage() {
-    printf("usage: lang [file...]\n");
+    printf("usage: lof [-d]\n");
     return 1;
 }
 
@@ -26,43 +23,55 @@ int yywrap() {
     return 1;
 }
 
+static void handle_query(char* line) {
+    Expr* expr = expr_from_string(line);
+    if (expr == NULL)
+        printf("invalid expression\n");
+    else
+        printf("%d\n", expr_eval(expr));
+}
+
+static void handle_eq(char* line, char* eq) {
+    *eq++ = '\0';
+    Expr* expr1 = expr_from_string(line);
+    if (expr1 == NULL)
+        printf("invalid expression\n");
+    else {
+        Expr* expr2 = expr_from_string(eq);
+        if (expr2 == NULL)
+            printf("invalid expression\n");
+        else {
+            if (expr_eq(expr1, expr2))
+                printf("equal\n");
+            else
+                printf("not equal\n");
+            expr_free(expr2);
+        }
+        expr_free(expr1);
+    }
+}
+
+static void handle_print(char* line) {
+    Expr* expr = expr_from_string(line);
+    if (expr == NULL)
+        printf("invalid expression\n");
+    else {
+        char rbuf[512];
+        expr_to_string(expr, rbuf, sizeof(rbuf));
+        expr_free(expr);
+        printf(" %s\n", rbuf);
+    }
+}
+
 static void handle_line(char* line) {
     if (*line == '?') {
-        Expr* expr = expr_from_string(line+1);
-        if (expr == NULL)
-            printf("invalid expression\n");
-        else
-            printf("%d\n", expr_eval(expr));
+        handle_query(line+1);
     } else {
         char* eq = strchr(line, '=');
-        if (eq == NULL) {
-            Expr* expr = expr_from_string(line);
-            if (expr == NULL)
-                printf("invalid expression\n");
-            else {
-                char rbuf[512];
-                expr_to_string(expr, rbuf, sizeof(rbuf));
-                expr_free(expr);
-                printf("%s\n", rbuf);
-            }
+        if (eq != NULL) {
+            handle_eq(line, eq);
         } else {
-            *eq++ = '\0';
-            Expr* expr1 = expr_from_string(line);
-            if (expr1 == NULL)
-                printf("invalid expression\n");
-            else {
-                Expr* expr2 = expr_from_string(eq);
-                if (expr2 == NULL)
-                    printf("invalid expression\n");
-                else {
-                    if (expr_eq(expr1, expr2))
-                        printf("equal\n");
-                    else
-                        printf("not equal\n");
-                    expr_free(expr2);
-                }
-                expr_free(expr1);
-            }
+            handle_print(line);
         }
     }
 }
@@ -91,9 +100,14 @@ int main(int argc, char* argv[]) {
 
     for (;;) {
         printf(">");
-        char line[256];
+        char line[512];
         if (fgets(line, sizeof(line), stdin) == NULL) break;
         size_t len = strcspn(line, "\r\n");
+        if (len == 0) continue;
+        if (len >= sizeof(line)-1) {
+            printf("line too long\n");
+            continue;
+        }
         line[len] = '\0';
         if (strcmp(line, "q") == 0) break;
         handle_line(line);
