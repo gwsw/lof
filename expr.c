@@ -116,16 +116,24 @@ void vars_free(List* vars) {
     }
 }
 
-static Expr* expr_subst_vars2(Expr* expr, List* vars) {
+static void vars_set_value(List* vars, unsigned long val_mask) {
+    Var* var = NULL;
+    while ((var = list_next(vars, var)) != NULL) {
+        var->v_value = val_mask & 1;
+        val_mask >>= 1;
+    }
+}
+
+static Expr* expr_subst_vars(Expr* expr, List* vars) {
     switch (expr->expr_type) {
     case ET_LIST: {
         Expr* nexpr = expr_list_new();
         Expr* child = NULL;
         while ((child = list_next(expr->expr_children, child)) != NULL)
-            expr_add_child(nexpr, expr_subst_vars2(child, vars));
+            expr_add_child(nexpr, expr_subst_vars(child, vars));
         return nexpr; }
     case ET_NEG:
-        return expr_neg_new(expr_subst_vars2(expr->expr_neg_expr, vars));
+        return expr_neg_new(expr_subst_vars(expr->expr_neg_expr, vars));
     case ET_VAR: {
         int value = -1;
         Var* var = NULL;
@@ -145,15 +153,6 @@ static Expr* expr_subst_vars2(Expr* expr, List* vars) {
     }
 }
 
-static Expr* expr_subst_vars(Expr* expr, List* vars, unsigned long val_mask) {
-    Var* var = NULL;
-    while ((var = list_next(vars, var)) != NULL) {
-        var->v_value = val_mask & 1;
-        val_mask >>= 1;
-    }
-    return expr_subst_vars2(expr, vars);
-}
-
 int expr_eq(Expr* expr1, Expr* expr2) {
     List* vars = list_new();
     expr_vars(expr1, vars);
@@ -161,8 +160,9 @@ int expr_eq(Expr* expr1, Expr* expr2) {
     int num_vars = list_count(vars);
     int eq = 1;
     for (unsigned long val_mask = 0; val_mask != (1<<num_vars); ++val_mask) {
-        Expr* e1 = expr_subst_vars(expr1, vars, val_mask);
-        Expr* e2 = expr_subst_vars(expr2, vars, val_mask);
+        vars_set_value(vars, val_mask);
+        Expr* e1 = expr_subst_vars(expr1, vars);
+        Expr* e2 = expr_subst_vars(expr2, vars);
         eq = (expr_eval(e1) == expr_eval(e2));
         expr_free(e1);
         expr_free(e2);
