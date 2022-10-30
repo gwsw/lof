@@ -10,7 +10,7 @@ extern void yyerror(char const*);
 
 "["                     { return LBRAC; }
 "]"                     { return RBRAC; }
-[A-Za-z_][A-Za-z0-9_]*  { yylval.string_val = strdup(yytext); return VAR; }
+[A-Za-z_][A-Za-z0-9_]*  { yylval.string_val = yytext; return VAR; }
 
 [ \t\r\n]+              { }
 .                       { char msg[32];
