@@ -8,16 +8,19 @@ LEXFLAGS = -d
 CFLAGS += -DYYDEBUG
 endif
 
-XOBJ = expr.o list.o
+YACC = bison
+LEX = flex
 
-$(APP): $(APP)c.o $(APP)w.o $(APP).lex.o $(XOBJ)
-	$(CC) -o $(APP) $(APP)c.o $(APP)w.o $(APP).lex.o $(XOBJ)
+OBJ = $(APP)c.o $(APP)w.o $(APP).lex.o expr.o list.o
+
+$(APP): $(OBJ)
+	$(CC) -o $(APP) $(CFLAGS) $(OBJ)
 
 $(APP).yacc.c $(APP).yacc.h: $(APP).y
-	bison -d -o $(APP).yacc.c $(APP).y
+	$(YACC) -d -o $(APP).yacc.c $(APP).y
 
 $(APP).lex.c: $(APP).l $(APP).yacc.h
-	lex $(LEXFLAGS) $(APP).l && mv lex.yy.c $(APP).lex.c
+	$(LEX) $(LEXFLAGS) $(APP).l && mv lex.yy.c $(APP).lex.c
 
 $(APP)w.o: $(APP)w.c $(APP).yacc.c
 
