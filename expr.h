@@ -27,7 +27,6 @@ Expr* expr_var_new(char const* var_name);
 Expr* expr_neg_new(Expr* expr);
 void expr_free(Expr* expr);
 void expr_add_child(Expr* expr, Expr* child);
-List* expr_vars(Expr* expr, List* vars);
 void vars_free(List* list);
 int expr_eq(Expr* expr1, Expr* expr2);
 int expr_eval(Expr* expr);

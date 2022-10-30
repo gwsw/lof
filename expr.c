@@ -81,15 +81,15 @@ int expr_eval(Expr* expr) {
     }
 }
 
-static void expr_find_vars(Expr* expr, List* vars) {
+static void expr_vars(Expr* expr, List* vars) {
     switch (expr->expr_type) {
     case ET_LIST: {
         Expr* child = NULL;
         while ((child = list_next(expr->expr_children, child)) != NULL)
-            expr_find_vars(child, vars);
+            expr_vars(child, vars);
         break; }
     case ET_NEG: 
-        expr_find_vars(expr->expr_neg_expr, vars);
+        expr_vars(expr->expr_neg_expr, vars);
         break;
     case ET_VAR: {
         Var* var = NULL;
@@ -105,13 +105,6 @@ static void expr_find_vars(Expr* expr, List* vars) {
     default:
         assert(0);
     }
-}
-
-List* expr_vars(Expr* expr, List* vars) {
-    if (vars == NULL)
-        vars = list_new();
-    expr_find_vars(expr, vars);
-    return vars;
 }
 
 void vars_free(List* vars) {
@@ -162,7 +155,8 @@ static Expr* expr_subst_vars(Expr* expr, List* vars, unsigned long val_mask) {
 }
 
 int expr_eq(Expr* expr1, Expr* expr2) {
-    List* vars = expr_vars(expr1, NULL);
+    List* vars = list_new();
+    expr_vars(expr1, vars);
     expr_vars(expr2, vars);
     int num_vars = list_count(vars);
     int eq = 1;
