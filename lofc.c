@@ -23,23 +23,22 @@ int yywrap() {
     return 1;
 }
 
-static void handle_query(char* line) {
-    Expr* expr = expr_from_string(line);
+static void handle_eval(char const* str) {
+    Expr* expr = expr_from_string(str);
     if (expr == NULL)
-        printf("invalid expression\n");
+        printf("invalid expression: %s\n", str);
     else
         printf("%d\n", expr_eval(expr));
 }
 
-static void handle_eq(char* line, char* eq) {
-    *eq++ = '\0';
-    Expr* expr1 = expr_from_string(line);
+static void handle_eq(char const* str1, char const* str2) {
+    Expr* expr1 = expr_from_string(str1);
     if (expr1 == NULL)
-        printf("invalid expression\n");
+        printf("invalid expression: %s\n", str1);
     else {
-        Expr* expr2 = expr_from_string(eq);
+        Expr* expr2 = expr_from_string(str2);
         if (expr2 == NULL)
-            printf("invalid expression\n");
+            printf("invalid expression: %s\n", str2);
         else {
             if (expr_eq(expr1, expr2))
                 printf("equal\n");
@@ -51,10 +50,10 @@ static void handle_eq(char* line, char* eq) {
     }
 }
 
-static void handle_print(char* line) {
-    Expr* expr = expr_from_string(line);
+static void handle_print(char* str) {
+    Expr* expr = expr_from_string(str);
     if (expr == NULL)
-        printf("invalid expression\n");
+        printf("invalid expression: %s\n", str);
     else {
         char rbuf[512];
         expr_to_string(expr, rbuf, sizeof(rbuf));
@@ -65,10 +64,11 @@ static void handle_print(char* line) {
 
 static void handle_line(char* line) {
     if (*line == '?') {
-        handle_query(line+1);
+        handle_eval(line+1);
     } else {
         char* eq = strchr(line, '=');
         if (eq != NULL) {
+            *eq++ = '\0';
             handle_eq(line, eq);
         } else {
             handle_print(line);
