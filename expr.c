@@ -124,6 +124,15 @@ static void vars_set_value(List* vars, unsigned long val_mask) {
     }
 }
 
+static int var_get_value(List* vars, const char* var_name) {
+    Var* var = NULL;
+    while ((var = list_next(vars, var)) != NULL) {
+        if (strcmp(var_name, var->v_name) == 0)
+            return var->v_value;
+    }
+    return -1;
+}
+
 static Expr* expr_subst_vars(Expr* expr, List* vars) {
     switch (expr->expr_type) {
     case ET_LIST: {
@@ -135,14 +144,7 @@ static Expr* expr_subst_vars(Expr* expr, List* vars) {
     case ET_NEG:
         return expr_neg_new(expr_subst_vars(expr->expr_neg_expr, vars));
     case ET_VAR: {
-        int value = -1;
-        Var* var = NULL;
-        while ((var = list_next(vars, var)) != NULL) {
-            if (strcmp(expr->expr_var_name, var->v_name) == 0) {
-                value = var->v_value;
-                break;
-            }
-        }
+        int value = var_get_value(vars, expr->expr_var_name);
         assert(value >= 0);
         Expr* nexpr = expr_list_new();
         if (value)
@@ -158,6 +160,7 @@ int expr_eq(Expr* expr1, Expr* expr2) {
     expr_vars(expr1, vars);
     expr_vars(expr2, vars);
     int num_vars = list_count(vars);
+    // Try all possible values of all variables in both exprs.
     int eq = 1;
     for (unsigned long val_mask = 0; val_mask != (1<<num_vars); ++val_mask) {
         vars_set_value(vars, val_mask);
