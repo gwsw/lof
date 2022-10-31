@@ -15,14 +15,6 @@ static int usage() {
     return 1;
 }
 
-void yyerror(const char* str) {
-    fprintf(stderr, "ERROR: %s\n", str);
-}
-
-int yywrap() {
-    return 1;
-}
-
 static void handle_eval(char const* str) {
     Expr* expr = expr_from_string(str);
     if (expr == NULL)
