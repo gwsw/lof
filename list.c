@@ -23,6 +23,10 @@ void list_unlink(ListNode* ln) {
     ln->ln_prev->ln_next = ln->ln_next;
 }
 
+int list_empty(List* ls) {
+    return ls == NULL || ls->ls_head == &ls->n;
+}
+
 void* list_next(List* ls, void* vln) {
     if (ls == NULL) return NULL;
     ListNode* ln = vln;

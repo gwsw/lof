@@ -15,6 +15,8 @@ Expr* expr_from_string(char const* str) {
     expr_returned = NULL;
     if (yyparse()) expr_returned = NULL;
     fclose(str_fd);
+///    if (expr_returned != NULL)
+///        expr_set_depth(expr_returned, 0);
     return expr_returned;
 }
 

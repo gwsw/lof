@@ -42,6 +42,15 @@ static void handle_eq(char const* str1, char const* str2) {
     }
 }
 
+static void handle_negdump(char* str) {
+    Expr* expr = expr_from_string(str);
+    if (expr == NULL)
+        printf("invalid expression: %s\n", str);
+    else {
+        expr_negdump(expr);
+    }
+}
+
 static void handle_print(char* str) {
     Expr* expr = expr_from_string(str);
     if (expr == NULL)
@@ -57,6 +66,8 @@ static void handle_print(char* str) {
 static void handle_line(char* line) {
     if (*line == '?') {
         handle_eval(line+1);
+    } else if (*line == '%') {
+        handle_negdump(line+1);
     } else {
         char* eq = strchr(line, '=');
         if (eq != NULL) {
@@ -90,19 +101,24 @@ int main(int argc, char* argv[]) {
     yyset_debug(yydebug);
 #endif
 
-    for (;;) {
-        printf(">");
-        char line[512];
-        if (fgets(line, sizeof(line), stdin) == NULL) break;
-        size_t len = strcspn(line, "\r\n");
-        if (len == 0) continue;
-        if (len >= sizeof(line)-1) {
-            printf("line too long\n");
-            continue;
+    if (optind < argc) {
+        for (; optind < argc; ++optind)
+            handle_line(argv[optind]);
+    } else {
+        for (;;) {
+            printf(">");
+            char line[512];
+            if (fgets(line, sizeof(line), stdin) == NULL) break;
+            size_t len = strcspn(line, "\r\n");
+            if (len == 0) continue;
+            if (len >= sizeof(line)-1) {
+                printf("line too long\n");
+                continue;
+            }
+            line[len] = '\0';
+            if (strcmp(line, "q") == 0) break;
+            handle_line(line);
         }
-        line[len] = '\0';
-        if (strcmp(line, "q") == 0) break;
-        handle_line(line);
     }
     return 0;
 }

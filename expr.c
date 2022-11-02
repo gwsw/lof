@@ -7,6 +7,7 @@
 static Expr* expr_new(ExprType type) {
     Expr* expr = (Expr*) malloc(sizeof(Expr));
     expr->expr_type = type;
+///    expr->expr_depth = 0;
     return expr;
 }
 
@@ -58,6 +59,37 @@ void expr_add_child(Expr* expr, Expr* child) {
         expr->expr_children = list_new();
     list_add_tail(expr->expr_children, &child->expr_node);
 }
+
+typedef struct DrPos {
+    unsigned int pos;
+} DrPos;
+
+#if 0 ///
+void expr_set_depth2(Expr* expr, unsigned int depth, DrPos* drpos) {
+    expr->expr_depth = depth;
+    switch (expr->expr_type) {
+    case ET_LIST: {
+        Expr* child = NULL;
+        unsigned int pos = drpos->pos;
+        while ((child = list_next(expr->expr_children, child)) != NULL)
+            expr_set_depth(child, depth);
+        expr->expr_width = drpos->pos - pos;
+        break; }
+    case ET_NEG:
+        expr_set_depth(expr->expr_neg_expr, depth+1);
+        break;
+    case ET_VAR:
+        break;
+    default:
+        assert(0);
+    }
+}
+
+void expr_set_depth(Expr* expr, unsigned int depth) {
+    DrPos drpos = { 0 };
+    expr_set_depth2(expr, depth, &drpos);
+}
+#endif
 
 int expr_eval(Expr* expr) {
     switch (expr->expr_type) {
@@ -195,6 +227,7 @@ static void expr_to_string2(Expr* expr, MemBuf* mbuf) {
         membuf_addchar(mbuf, '[');
         expr_to_string2(expr->expr_neg_expr, mbuf);
         membuf_addchar(mbuf, ']');
+///membuf_addchar(mbuf, '0'+expr->expr_depth);
         break;
     case ET_VAR: {
         int plen = snprintf(mbuf->buf, mbuf->len, "%s", expr->expr_var_name);
@@ -230,4 +263,40 @@ void expr_print(Expr* expr) {
     default:
         abort();
     }
+}
+
+typedef struct NegDumpState {
+    unsigned int pos;
+} NegDumpState;
+
+void expr_negdump2(Expr* expr, int depth, NegDumpState* xxx) {
+    switch (expr->expr_type) {
+    case ET_LIST:
+        if (list_empty(expr->expr_children)) {
+            xxx->pos += 1;
+        } else {
+            Expr* child = NULL;
+            while ((child = list_next(expr->expr_children, child)) != NULL)
+                expr_negdump2(child, depth, xxx);
+        }
+        break;
+    case ET_NEG:
+        unsigned int pos = xxx->pos;
+        NegDumpState xxx1 = { pos };
+        expr_negdump2(expr->expr_neg_expr, depth+1, &xxx1);
+        printf("%d,%d,%d;", pos, xxx1.pos - pos, depth);
+        xxx->pos = xxx1.pos;
+        break;
+    case ET_VAR:
+        printf("%d,1,%d:%s;", xxx->pos, depth, expr->expr_var_name);
+        break;
+    default:
+        abort();
+    }
+}
+
+void expr_negdump(Expr* expr) {
+    NegDumpState xxx = { 0 };
+    expr_negdump2(expr, 0, &xxx);
+    printf("\n");
 }
